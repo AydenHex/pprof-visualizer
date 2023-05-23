@@ -69,12 +69,32 @@
         });
     });
 
-    /**
-     * Updates the thumbnail on a drop zone element.
-     *
-     * @param {HTMLElement} dropZoneElement
-     * @param {File} file
-     */
+    document.querySelector(".config").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        let formData = new FormData();
+        if (e.target.file.files.length) {
+            formData.set("file", e.target.file.files[0]);
+        } else if (e.target.url.value) {
+            formData.set("file", await createFileFromUrl(e.target.url.value));
+        }
+
+        getTree(formData);
+    });
+
+    async function createFileFromUrl(url){
+        try {
+            let response = await fetch(url);
+            let data = await response.blob();
+            let metadata = {
+                type: data.type
+            };
+            return new File([data], "file", metadata);
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
+    }
+
     function updateDropzone(dropZoneElement, file) {
         let filesList = dropZoneElement.querySelector(".drop-zone__thumb");
 
