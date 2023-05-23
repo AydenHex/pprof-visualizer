@@ -3,108 +3,88 @@
 <head>
     <title>Drag and Drop File Upload</title>
     <meta charset="UTF-8">
-    <style>
-        #content {
-            display: flex;
-            flex-direction: row;
-            align-items: flex-start;
-            justify-content: left;
-        }
-
-        aside {
-            width: 25vw;
-            height: 100vh;
-            margin: 0;
-            padding: 0;
-        }
-
-        #drop_zone {
-            border: 2px dashed #bbb;
-            color: #bbb;
-            padding: 20px;
-            text-align: center;
-            font-size: 20px;
-            height: 200px;
-            width: 400px;
-            margin: 50px auto;
-        }
-
-        ul, #myUL {
-            list-style-type: none;
-        }
-
-        #myUL {
-            margin: 0;
-            padding: 0;
-        }
-
-        .caret {
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .caret::before {
-            content: "\25B6";
-            color: black;
-            display: inline-block;
-            margin-right: 6px;
-        }
-
-        .caret-down::before {
-            transform: rotate(90deg);
-        }
-
-        .nested {
-            display: none;
-        }
-
-        .active {
-            display: block;
-        }
-
-
-
-    </style>
+    <link rel="stylesheet" href="/static/reset.css">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<div id="content">
-    <aside>
-        <div id="drop_zone" ondrop="dropHandler(event);"
-             ondragover="dragOverHandler(event);">
-            <p>Drag one or more files to this <i>drop zone</i>.</p>
+<main class="with-sidebar content">
+    <form class="config">
+        <h2>Configurator</h2>
+        <div class="drop-zone">
+            <span class="drop-zone__prompt">Drop file here or click to upload</span>
+            <input type="file" name="file" class="drop-zone__input">
         </div>
-    </aside>
+
+        <span> OR </span>
+        <input name="url" type="url" placeholder="URL du fichier" />
+        <select name="type">
+            <option value="" disabled selected>Type (CPU, memory...)</option>
+            <option value="CPU">CPU</option>
+            <option value="MEM">MEMORY</option>
+        </select>
+        <select name="graph">
+            <option value="zoomable_sunburst">Zoomable Sunburst</option>
+        </select>
+        <input type="submit" value="Visualize" />
+        <button>Reset</button>
+    </form>
     <div id="visualization"></div>
-</div>
+
+</main>
 
 <script>
-    function dropHandler(ev) {
-        console.log("File(s) dropped");
+    document.querySelectorAll(".drop-zone__input").forEach((inputElement) => {
+        const dropZoneElement = inputElement.closest(".drop-zone");
 
-        ev.preventDefault();
+        dropZoneElement.addEventListener("click", (e) => {
+            inputElement.click();
+        });
 
-        if (ev.dataTransfer.items) {
-            [...ev.dataTransfer.items].forEach((item, i) => {
-                if (item.kind === "file") {
-                    const file = item.getAsFile();
-                    //DEBUG
-                    console.log(`… file[${i}].name = ${file.name}`);
-                    let formData = new FormData();
-                    formData.append('file', file);
-                    getTree(formData)
-                }
+        inputElement.addEventListener("change", (e) => {
+            if (inputElement.files.length) {
+                updateDropzone(dropZoneElement, inputElement.files[0]);
+            }
+        });
+
+        dropZoneElement.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropZoneElement.classList.add("drop-zone--over");
+        });
+
+        ["dragleave", "dragend"].forEach((type) => {
+            dropZoneElement.addEventListener(type, (e) => {
+                dropZoneElement.classList.remove("drop-zone--over");
             });
-        } else {
-            [...ev.dataTransfer.files].forEach((file, i) => {
-                console.log(`… file[${i}].name = ${file.name}`);
+        });
 
-            });
+        dropZoneElement.addEventListener("drop", (e) => {
+            e.preventDefault();
+
+            if (e.dataTransfer.files.length) {
+                inputElement.files = e.dataTransfer.files;
+                updateDropzone(dropZoneElement, e.dataTransfer.files[0]);
+            }
+
+            dropZoneElement.classList.remove("drop-zone--over");
+        });
+    });
+
+    /**
+     * Updates the thumbnail on a drop zone element.
+     *
+     * @param {HTMLElement} dropZoneElement
+     * @param {File} file
+     */
+    function updateDropzone(dropZoneElement, file) {
+        let filesList = dropZoneElement.querySelector(".drop-zone__thumb");
+
+        // First time - there is no thumbnail element, so lets create it
+        if (!filesList) {
+            filesList = document.createElement("span");
+            dropZoneElement.appendChild(filesList);
         }
-    }
 
-    function dragOverHandler(ev) {
-        console.log("File(s) in drop zone");
-        ev.preventDefault();
+        filesList.innerHTML = file.name;
     }
 
     async function getTree(formData) {

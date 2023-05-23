@@ -26,6 +26,7 @@ func InitializeRouter(services *services.Services, config configs.ApiConfig) *gi
 func initializeRoutes(r *gin.Engine, services *services.Services, config configs.ApiConfig) {
 	r.GET("/health", handlers.Healthcheck())
 	r.GET("/", handlers.Index())
+	r.Static("/static", "./web/static")
 	r.POST("/visualize", handlers.Visualize())
 
 	r.Use(fcmsrouter.Ginzap(logger.Log, time.RFC3339, true, false))
